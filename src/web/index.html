@@ -24,15 +24,23 @@
         <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 7.5h3l1.6-2.5h8.8L18 7.5h3V19H3z"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
         <span class="lbl-text">Under camera</span>
       </button>
+      <button id="btnSide" class="toggle icon-btn" title="Side scroll: show the script as one line that moves sideways as you speak, instead of scrolling down">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 12h18M16 7l5 5-5 5M8 7l-5 5 5 5"/></svg>
+        <span class="lbl-text">Side scroll</span>
+      </button>
 
+      <button id="btnReset" class="icon-btn" title="Back to the top of the script (Home)">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></svg>
+        <span class="lbl-text">Reset</span>
+      </button>
+      <span class="tb-sep"></span>
+      <button id="btnSmaller" class="size-btn" title="Smaller text (⌘/Ctrl −)">A−</button>
+      <button id="btnLarger" class="size-btn" title="Larger text (⌘/Ctrl +)">A+</button>
       <span class="tb-sep"></span>
       <button id="btnMore" class="narrow-only" title="More controls" aria-expanded="false">☰</button>
       <div id="secondary">
         <button id="btnEdit" title="Open the script editor">Edit script</button>
         <select id="scriptSelect" title="Recent scripts — the reading position is remembered per script"></select>
-        <button id="btnReset" title="Back to the top of the script (Home)">Reset</button>
-        <button id="btnSmaller" title="Smaller text (⌘/Ctrl −)">A−</button>
-        <button id="btnLarger" title="Larger text (⌘/Ctrl +)">A+</button>
         <button id="btnMirror" class="toggle" title="Flip horizontally for beam-splitter glass">Mirror</button>
         <button id="btnTopmost" class="toggle" data-feature="topmost" title="Keep this window above all others">On top</button>
         <button id="btnFull" class="toggle" data-feature="fullscreen" title="Full screen (F11 / ⌃⌘F, Esc to exit)">Full screen</button>
@@ -53,6 +61,8 @@
     </div>
     <div class="fade top"></div>
     <div class="fade bottom"></div>
+    <div id="guideSide"></div>
+    <div class="fade left"></div>
     <div id="guide"><span class="tri left"></span><span class="line"></span><span class="tri right"></span></div>
     <div id="heard" hidden><span class="label">heard:</span> <span id="heardText"></span></div>
     <div id="dropHint" hidden>Drop a .docx or .txt file to load it</div>
@@ -119,6 +129,7 @@
         <label class="chk"><input id="chkCountdown" type="checkbox" /> 3-2-1 countdown on Start</label>
         <label class="chk" data-feature="fileWatch"><input id="chkFollow" type="checkbox" /> Reload the script when its file changes (Word sync)</label>
         <label class="chk"><input id="chkHeard" type="checkbox" /> Show recognized words (debug strip)</label>
+        <label class="chk"><input id="chkSemiManual" type="checkbox" /> Semi-manual scrolling — scroll by hand to take over; auto-scroll resumes when you stop</label>
         <label class="chk"><input id="chkFlow" type="checkbox" /> Flow mode — glide through short pauses (experimental)</label>
         <label class="chk" data-feature="hideFromCapture"><input id="chkCapture" type="checkbox" /> Hide this window from screen recordings</label>
         <label class="chk" data-feature="keepAwake"><input id="chkAwake" type="checkbox" /> Keep the screen on while reading</label>

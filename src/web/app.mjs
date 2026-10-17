@@ -17,6 +17,10 @@ const $ = (id) => document.getElementById(id);
 // Where the guide line sits, as a fraction of the prompter's height. Near the
 // top by default, so the line being read is as close to the webcam as possible.
 const readingFraction = () => S.readingLine ?? 0.1;
+// Side-scroll mode: the script runs as one line, and the word being read sits
+// this far from the left — so most of the line ahead stays visible.
+const SIDE_FRACTION = 0.4;
+const horizontal = () => !!S.horizontal;
 const ASSUMED_WPM = 150;
 const MAX_RECENT = 10;
 
@@ -171,7 +175,7 @@ function renderScript() {
     const next = i + 1 < tokens.length ? tokens[i + 1].start : text.length;
     if (next > end) {
       const g = document.createElement('span');
-      g.className = 'g';
+      g.className = /\n/.test(text.slice(end, next)) ? 'g para' : 'g';
       g.textContent = text.slice(end, next);
       frag.appendChild(g);
       gaps.push(g);
@@ -208,20 +212,49 @@ function setCurrent(index) {
 const viewport = () => $('viewport');
 const scroll = { current: 0, target: 0, state: { velocity: 0 }, last: 0, written: 0 };
 const flow = { paused: false, pausedSince: 0, pace: 0, lastConfirmed: 0, lastTargetAt: 0 };
+// Semi-manual scrolling: while the user scrolls by hand, voice updates don't
+// move the view; once they've stopped for MANUAL_IDLE_MS it glides back to
+// the word being read.
+const MANUAL_IDLE_MS = 1200;
+const manual = { until: 0 };
+const manualActive = () => manual.until > performance.now();
 
 function layoutPadding() {
-  const h = viewport().clientHeight;
-  const line = parseFloat(getComputedStyle($('column')).lineHeight) || S.fontSize * 1.38;
-  $('column').style.paddingTop = `${Math.max(0, h * readingFraction() - line / 2)}px`;
-  $('column').style.paddingBottom = `${Math.round(h * (1 - readingFraction()))}px`;
+  const vp = viewport();
+  const col = $('column');
+  const h = vp.clientHeight;
+  const line = parseFloat(getComputedStyle(col).lineHeight) || S.fontSize * 1.38;
+  col.style.paddingTop = `${Math.max(0, h * readingFraction() - line / 2)}px`;
   $('guide').style.top = `${h * readingFraction()}px`;
-  // Fade out already-read text above the line without dimming the line itself.
-  document.querySelector('.fade.top').style.height = `${Math.round(h * readingFraction() * 0.6)}px`;
+  if (horizontal()) {
+    const w = vp.clientWidth;
+    col.style.paddingBottom = '0px';
+    col.style.paddingLeft = `${Math.round(w * SIDE_FRACTION)}px`;
+    col.style.paddingRight = `${Math.round(w * (1 - SIDE_FRACTION))}px`;
+    const marker = $('guideSide');
+    marker.style.left = `${Math.round(w * (S.mirror ? 1 - SIDE_FRACTION : SIDE_FRACTION))}px`;
+    marker.style.top = `${Math.max(0, h * readingFraction() - line / 2) + line + 2}px`;
+  } else {
+    col.style.paddingBottom = `${Math.round(h * (1 - readingFraction()))}px`;
+    col.style.paddingLeft = col.style.paddingRight = '';
+    // Fade out already-read text above the line without dimming the line itself.
+    document.querySelector('.fade.top').style.height = `${Math.round(h * readingFraction() * 0.6)}px`;
+  }
+}
+
+// Scroll position along whichever axis the script moves on.
+const getPos = (vp) => (horizontal() ? vp.scrollLeft : vp.scrollTop);
+function setPos(vp, value) {
+  if (horizontal()) vp.scrollLeft = value;
+  else vp.scrollTop = value;
 }
 
 function targetFor(index) {
   if (index < 0 || !spans[index]) return 0;
   const el = spans[index];
+  if (horizontal()) {
+    return Math.max(0, el.offsetLeft + el.offsetWidth / 2 - viewport().clientWidth * SIDE_FRACTION);
+  }
   return Math.max(0, el.offsetTop + el.offsetHeight / 2 - viewport().clientHeight * readingFraction());
 }
 
@@ -238,20 +271,33 @@ function setTarget(offset) {
   }
   flow.lastConfirmed = offset;
   flow.lastTargetAt = now;
+  if (manualActive()) return;
   scroll.target = offset;
 }
 
 function jumpScroll(offset) {
+  manual.until = 0;
   scroll.target = scroll.current = Math.max(0, offset);
   scroll.state.velocity = 0;
-  viewport().scrollTop = scroll.current;
-  scroll.written = viewport().scrollTop;
+  setPos(viewport(), scroll.current);
+  scroll.written = getPos(viewport());
 }
 
 function frame(t) {
   const dt = scroll.last ? Math.min(0.1, (t - scroll.last) / 1000) : 1 / 60;
   scroll.last = t;
   const vp = viewport();
+
+  if (manual.until) {
+    if (manualActive()) {
+      requestAnimationFrame(frame);
+      return;
+    }
+    // The user stopped scrolling: hand control back to the voice.
+    manual.until = 0;
+    scroll.state.velocity = 0;
+    scroll.target = targetFor(current);
+  }
 
   // Flow mode: glide through short pauses at reduced pace instead of a hard
   // stop, but never far past the last confirmed position.
@@ -260,12 +306,14 @@ function frame(t) {
     scroll.target = Math.min(scroll.target + flow.pace * 0.4 * dt, flow.lastConfirmed + 90);
   }
 
-  const max = Math.max(0, vp.scrollHeight - vp.clientHeight);
+  const max = horizontal()
+    ? Math.max(0, vp.scrollWidth - vp.clientWidth)
+    : Math.max(0, vp.scrollHeight - vp.clientHeight);
   const target = Math.min(scroll.target, max);
   if (dt > 0 && Math.abs(target - scroll.current) >= 0.25) {
     scroll.current = smoothDamp(scroll.current, target, scroll.state, S.scrollSmoothness, dt);
-    vp.scrollTop = scroll.current;
-    scroll.written = vp.scrollTop;
+    setPos(vp, scroll.current);
+    scroll.written = getPos(vp);
   }
   requestAnimationFrame(frame);
 }
@@ -274,11 +322,12 @@ function frame(t) {
 // target itself — otherwise the spring would drag the view straight back.
 // The next voice update re-takes control.
 function onUserScroll() {
-  const top = viewport().scrollTop;
+  const top = getPos(viewport());
   if (Math.abs(top - scroll.written) > 2) {
     scroll.current = scroll.target = top;
     scroll.state.velocity = 0;
     scroll.written = top;
+    if (S.semiManual) manual.until = performance.now() + MANUAL_IDLE_MS;
   }
 }
 
@@ -503,6 +552,7 @@ function rememberPosition(immediate = false) {
 // ------------------------------------------------------------- navigation
 
 function seekToToken(index) {
+  manual.until = 0; // a deliberate jump (click, keys, Reset) ends hand scrolling
   index = Math.max(-1, Math.min(index, script.tokenCount - 1));
   setCurrent(index);
   if (matcher) {
@@ -529,7 +579,9 @@ function jumpParagraph(direction) {
 function applyAppearance() {
   const col = $('column');
   col.style.fontSize = `${S.fontSize}px`;
-  col.style.maxWidth = `${S.columnWidth}px`;
+  col.style.maxWidth = horizontal() ? 'none' : `${S.columnWidth}px`;
+  document.documentElement.classList.toggle('horizontal', horizontal());
+  $('btnSide').classList.toggle('on', horizontal());
   viewport().classList.toggle('mirror', !!S.mirror);
   $('stage').classList.toggle('mirror', !!S.mirror);
   $('heard').hidden = !S.showHeard;
@@ -695,6 +747,7 @@ function bindSettings() {
   bindCheck('chkFollow', 'followFileChanges', () => P.watchScript(S.followFileChanges ? activeScript().filePath : null));
   bindCheck('chkHeard', 'showHeard', applyAppearance);
   bindCheck('chkFlow', 'flowMode');
+  bindCheck('chkSemiManual', 'semiManual', () => { manual.until = 0; });
   bindCheck('chkCapture', 'hideFromCapture');
   bindCheck('chkAwake', 'keepAwake', () => { if (running) P.keepAwake(S.keepAwake); });
   bindCheck('chkSim', 'forceSimulation', updateEngineNote);
@@ -917,6 +970,10 @@ function bindUi() {
     applyAppearance();
   });
   $('btnCamera').addEventListener('click', toggleCamera);
+  $('btnSide').addEventListener('click', () => {
+    save({ horizontal: !S.horizontal });
+    applyAppearance();
+  });
   $('btnFull').addEventListener('click', () => toggleFullscreen());
   $('btnSettings').addEventListener('click', () => ($('settings').hidden ? openSettings() : closeSettings()));
   $('btnMore').addEventListener('click', (e) => {
@@ -945,6 +1002,12 @@ function bindUi() {
     if (w) seekToToken(Number(w.dataset.i));
   });
   viewport().addEventListener('scroll', onUserScroll, { passive: true });
+  // In side-scroll mode a regular (vertical) mouse wheel moves along the line.
+  viewport().addEventListener('wheel', (e) => {
+    if (!horizontal() || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    viewport().scrollLeft += S.mirror ? -e.deltaY : e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
 
   window.addEventListener('resize', () => {
     layoutPadding();

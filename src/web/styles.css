@@ -103,6 +103,7 @@ a { color: var(--accent); }
 .toolbar-row { display: flex; flex-wrap: nowrap; gap: 5px; align-items: center; position: relative; }
 #secondary { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 #scriptSelect { width: 160px; }
+#toolbar .size-btn { padding: 2px 7px; min-width: 30px; }
 
 .icon-btn { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .icon-btn svg { flex: none; }
@@ -209,6 +210,25 @@ a { color: var(--accent); }
 #stage.mirror #guide .tri.left { border-left: 0; border-right: 9px solid var(--accent); }
 #stage.mirror #guide .tri.right { border-right: 0; border-left: 9px solid var(--accent); }
 
+
+/* ---------- Side-scroll mode: the script is one line moving sideways ---------- */
+#guideSide, .fade.left { display: none; }
+.horizontal #viewport { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.horizontal #viewport::-webkit-scrollbar { height: 0; }
+.horizontal #column { white-space: nowrap; width: max-content; margin: 0; }
+.horizontal #column .g.para::after { content: "•"; margin: 0 0.45em; color: var(--muted); opacity: 0.6; }
+.horizontal #guide, .horizontal .fade.top, .horizontal .fade.bottom { display: none; }
+.horizontal #guideSide {
+  /* A small arrow under the line, pointing up at the word being read. */
+  display: block; position: absolute; width: 0; height: 0; margin-left: -7px;
+  border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-bottom: 9px solid var(--accent); opacity: 0.85; pointer-events: none;
+}
+.horizontal .fade.left {
+  display: block; top: 0; bottom: 0; left: 0; right: auto; width: 18%;
+  background: linear-gradient(90deg, var(--bg), transparent);
+}
+#stage.mirror .fade.left { left: auto; right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
 
 #heard {
   position: absolute; left: 20px; bottom: 16px; max-width: calc(100% - 40px);

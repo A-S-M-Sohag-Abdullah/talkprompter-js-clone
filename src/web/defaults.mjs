@@ -8,6 +8,7 @@ export const DEFAULT_SCRIPT =
 
 export const DEFAULT_SETTINGS = {
   fontSize: 36,
+  horizontal: false, // side-scroll: one line moving right-to-left
   readingLine: 0.1, // guide line position, fraction of the prompter height
   scrollSmoothness: 0.22,
   sensitivity: 0.6,
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS = {
   microphoneId: '',
   showHeard: false,
   flowMode: false,
+  semiManual: false, // hand scrolling pauses auto-scroll until the user stops
   forceSimulation: false,
   followFileChanges: true,
   hideFromCapture: false,
