@@ -14,7 +14,9 @@ import { VoskEngine, ZipformerEngine, SimulatedEngine } from './speech.mjs';
 import { DEFAULT_SETTINGS, DEFAULT_SCRIPT } from './defaults.mjs';
 
 const $ = (id) => document.getElementById(id);
-const READING_FRACTION = 0.33; // the guide line sits a third of the way down
+// Where the guide line sits, as a fraction of the prompter's height. Near the
+// top by default, so the line being read is as close to the webcam as possible.
+const readingFraction = () => S.readingLine ?? 0.1;
 const ASSUMED_WPM = 150;
 const MAX_RECENT = 10;
 
@@ -210,15 +212,17 @@ const flow = { paused: false, pausedSince: 0, pace: 0, lastConfirmed: 0, lastTar
 function layoutPadding() {
   const h = viewport().clientHeight;
   const line = parseFloat(getComputedStyle($('column')).lineHeight) || S.fontSize * 1.38;
-  $('column').style.paddingTop = `${Math.max(0, h * READING_FRACTION - line / 2)}px`;
-  $('column').style.paddingBottom = `${Math.round(h * (1 - READING_FRACTION))}px`;
-  $('guide').style.top = `${h * READING_FRACTION}px`;
+  $('column').style.paddingTop = `${Math.max(0, h * readingFraction() - line / 2)}px`;
+  $('column').style.paddingBottom = `${Math.round(h * (1 - readingFraction()))}px`;
+  $('guide').style.top = `${h * readingFraction()}px`;
+  // Fade out already-read text above the line without dimming the line itself.
+  document.querySelector('.fade.top').style.height = `${Math.round(h * readingFraction() * 0.6)}px`;
 }
 
 function targetFor(index) {
   if (index < 0 || !spans[index]) return 0;
   const el = spans[index];
-  return Math.max(0, el.offsetTop + el.offsetHeight / 2 - viewport().clientHeight * READING_FRACTION);
+  return Math.max(0, el.offsetTop + el.offsetHeight / 2 - viewport().clientHeight * readingFraction());
 }
 
 function setTarget(offset) {
@@ -476,6 +480,7 @@ const toggle = () => (running ? stop() : start());
 
 function updateToggle() {
   $('btnToggle').textContent = running ? 'Stop' : 'Start';
+  $('btnToggle').classList.toggle('running', running);
 }
 
 let rememberTimer = null;
@@ -542,7 +547,7 @@ function applyTheme() {
 darkQuery.addEventListener('change', () => S && applyTheme());
 
 function setFontSize(size) {
-  save({ fontSize: Math.max(20, Math.min(140, Math.round(size))) });
+  save({ fontSize: Math.max(12, Math.min(140, Math.round(size))) });
   $('rngFont').value = S.fontSize;
   applyAppearance();
 }
@@ -673,6 +678,7 @@ function bindSettings() {
   bindRange('rngSmooth', 'scrollSmoothness');
   bindRange('rngSens', 'sensitivity', () => { if (matcher) matcher.options = optionsForSensitivity(S.sensitivity); });
   bindRange('rngCol', 'columnWidth', applyAppearance);
+  bindRange('rngLine', 'readingLine', applyAppearance);
 
   const bindCheck = (id, key, apply) => {
     const el = $(id);
@@ -839,6 +845,7 @@ async function removePack(code) {
 async function toggleCamera() {
   cameraOn = await P.setCameraMode(!cameraOn);
   $('btnCamera').classList.toggle('on', cameraOn);
+  document.documentElement.classList.toggle('camera', cameraOn);
   requestAnimationFrame(() => { layoutPadding(); jumpScroll(targetFor(current)); });
 }
 
@@ -875,8 +882,8 @@ function onKeyDown(e) {
     e.preventDefault();
     return;
   }
-  if (mod && (e.key === '=' || e.key === '+')) { setFontSize(S.fontSize + 4); e.preventDefault(); return; }
-  if (mod && e.key === '-') { setFontSize(S.fontSize - 4); e.preventDefault(); return; }
+  if (mod && (e.key === '=' || e.key === '+')) { setFontSize(S.fontSize + (S.fontSize < 24 ? 2 : 4)); e.preventDefault(); return; }
+  if (mod && e.key === '-') { setFontSize(S.fontSize - (S.fontSize <= 24 ? 2 : 4)); e.preventDefault(); return; }
   if (isTyping() || !$('langDialog').hidden || !$('editor').hidden) return;
 
   switch (e.key) {
@@ -898,8 +905,8 @@ function bindUi() {
   $('btnEdit').addEventListener('click', openEditor);
   $('btnReset').addEventListener('click', () => seekToToken(-1));
   $('scriptSelect').addEventListener('change', (e) => switchScript(e.target.value));
-  $('btnSmaller').addEventListener('click', () => setFontSize(S.fontSize - 4));
-  $('btnLarger').addEventListener('click', () => setFontSize(S.fontSize + 4));
+  $('btnSmaller').addEventListener('click', () => setFontSize(S.fontSize - (S.fontSize <= 24 ? 2 : 4)));
+  $('btnLarger').addEventListener('click', () => setFontSize(S.fontSize + (S.fontSize < 24 ? 2 : 4)));
   $('btnMirror').addEventListener('click', () => { save({ mirror: !S.mirror }, true); applyAppearance(); });
   $('btnTopmost').addEventListener('click', () => {
     save({ topmost: !S.topmost });

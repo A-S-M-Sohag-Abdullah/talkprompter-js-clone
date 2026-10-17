@@ -109,7 +109,7 @@ function createWindow() {
     backgroundColor: '#0F1115',
     icon: path.join(ROOT, 'src', 'web', 'icons', 'icon-512.png'),
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
-    trafficLightPosition: isMac ? { x: 14, y: 18 } : undefined,
+    trafficLightPosition: isMac ? { x: 12, y: 12 } : undefined,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -244,8 +244,9 @@ function setupIpc() {
       cameraRestore = { bounds: win.getNormalBounds(), topmost: win.isAlwaysOnTop() };
       // Target the display the window is on — the webcam sits above *that* screen.
       const work = screen.getDisplayMatching(win.getBounds()).workArea;
-      const width = 520;
-      const height = Math.max(240, Math.round(work.height * 0.72));
+      // A short strip: the eyes stay within a few centimetres of the lens.
+      const width = Math.min(620, work.width);
+      const height = Math.max(240, Math.round(work.height * 0.4));
       win.setBounds({ x: Math.round(work.x + (work.width - width) / 2), y: work.y, width, height });
       win.setAlwaysOnTop(true, isMac ? 'screen-saver' : 'normal');
       if (isMac) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });

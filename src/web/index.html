@@ -20,17 +20,21 @@
   <header id="toolbar">
     <div class="toolbar-row">
       <button id="btnToggle" class="primary" title="Start or stop voice tracking (Space)">Start</button>
-      <button id="btnEdit" title="Open the script editor">Edit script</button>
-      <select id="scriptSelect" title="Recent scripts — the reading position is remembered per script"></select>
-      <button id="btnReset" title="Back to the top of the script (Home)">Reset</button>
+      <button id="btnCamera" class="toggle icon-btn" data-feature="camera" title="Snap the window under your webcam: a slim always-on-top strip at the top-center of this screen. Click again to put it back.">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 7.5h3l1.6-2.5h8.8L18 7.5h3V19H3z"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span class="lbl-text">Under camera</span>
+      </button>
 
+      <span class="tb-sep"></span>
       <button id="btnMore" class="narrow-only" title="More controls" aria-expanded="false">☰</button>
       <div id="secondary">
+        <button id="btnEdit" title="Open the script editor">Edit script</button>
+        <select id="scriptSelect" title="Recent scripts — the reading position is remembered per script"></select>
+        <button id="btnReset" title="Back to the top of the script (Home)">Reset</button>
         <button id="btnSmaller" title="Smaller text (⌘/Ctrl −)">A−</button>
         <button id="btnLarger" title="Larger text (⌘/Ctrl +)">A+</button>
         <button id="btnMirror" class="toggle" title="Flip horizontally for beam-splitter glass">Mirror</button>
         <button id="btnTopmost" class="toggle" data-feature="topmost" title="Keep this window above all others">On top</button>
-        <button id="btnCamera" class="toggle" data-feature="camera" title="Narrow always-on-top strip at the top of the screen, right under your webcam">Camera</button>
         <button id="btnFull" class="toggle" data-feature="fullscreen" title="Full screen (F11 / ⌃⌘F, Esc to exit)">Full screen</button>
         <button id="btnSettings" class="toggle" title="Microphone, language and tracking options">Settings</button>
       </div>
@@ -98,7 +102,10 @@
         <select id="selMic"></select>
 
         <label class="lbl" for="rngFont">Text size <span id="valFont" class="muted"></span></label>
-        <input id="rngFont" type="range" min="20" max="140" step="2" />
+        <input id="rngFont" type="range" min="12" max="140" step="2" />
+
+        <label class="lbl" for="rngLine">Reading line position (left = right under the camera)</label>
+        <input id="rngLine" type="range" min="0.04" max="0.5" step="0.01" />
 
         <label class="lbl" for="rngSmooth">Scroll smoothing</label>
         <input id="rngSmooth" type="range" min="0.12" max="0.9" step="0.01" />

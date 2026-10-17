@@ -17,6 +17,7 @@
   --heard-bg: rgba(24, 28, 36, 0.8);
   --meter-track: rgba(0, 0, 0, 0.3);
   --thumb: #4A5262;
+  --accent-soft: rgba(76, 141, 255, 0.16);
   color-scheme: dark;
 }
 
@@ -39,6 +40,7 @@
   --heard-bg: rgba(255, 255, 255, 0.95);
   --meter-track: rgba(0, 0, 0, 0.12);
   --thumb: #B9C2CF;
+  --accent-soft: rgba(59, 125, 242, 0.12);
   color-scheme: light;
 }
 
@@ -62,8 +64,8 @@ button, select, input[type="text"] {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 6px 13px;
-  min-height: 32px;
+  padding: 5px 12px;
+  min-height: 30px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
 }
@@ -72,44 +74,56 @@ button:hover, select:hover { background: var(--surface-alt); }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; min-width: 92px; }
 button.primary:hover { filter: brightness(1.08); }
-button.toggle.on { background: var(--surface-alt); border-color: var(--accent); color: var(--accent); }
+button.toggle.on { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 select { padding-right: 8px; max-width: 220px; }
 a { color: var(--accent); }
 
 /* ---------- Toolbar ---------- */
+/* One slim row, so the script starts as close to the webcam as possible. */
 #toolbar {
   flex: none;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 10px 14px;
+  padding: 4px 8px;
   -webkit-app-region: drag;
 }
-.mac #toolbar { padding-left: 84px; } /* room for the traffic lights */
-.mac.fullscreen #toolbar { padding-left: 14px; }
+.mac #toolbar { padding-left: 76px; } /* room for the traffic lights */
+.mac.fullscreen #toolbar { padding-left: 8px; }
 #toolbar button, #toolbar select, #statusPill, #secondary { -webkit-app-region: no-drag; }
+#toolbar button, #toolbar select { min-height: 26px; padding: 2px 10px; font-size: 13px; border-radius: 7px; }
+#toolbar button:not(.primary), #toolbar select { background: transparent; border-color: transparent; }
+#toolbar button:not(.primary):hover, #toolbar select:hover { background: var(--surface-alt); }
+#toolbar select { border-color: var(--border); padding-right: 6px; }
+#toolbar button.primary { min-width: 64px; }
+#toolbar button.toggle.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+#btnToggle.running { background: var(--lost); color: #fff; }
+.tb-sep { width: 1px; height: 16px; background: var(--border); flex: none; margin: 0 2px; }
 
-.toolbar-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; position: relative; }
-#secondary { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-#scriptSelect { width: 180px; }
+.toolbar-row { display: flex; flex-wrap: nowrap; gap: 5px; align-items: center; position: relative; }
+#secondary { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+#scriptSelect { width: 160px; }
+
+.icon-btn { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.icon-btn svg { flex: none; }
 
 #statusPill {
   margin-left: auto;
-  flex: 1 1 150px;
-  max-width: max-content;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 6px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 6px 12px;
-  min-height: 32px;
+  border-radius: 7px;
+  padding: 2px 9px;
+  min-height: 26px;
+  font-size: 12.5px;
   white-space: nowrap;
 }
-.meter { width: 56px; height: 5px; border-radius: 3px; background: var(--meter-track); overflow: hidden; }
+.meter { width: 40px; height: 4px; border-radius: 2px; background: var(--meter-track); overflow: hidden; flex: none; }
 #meterFill { height: 100%; width: 0; background: var(--tracking); transition: width 0.08s linear; }
 #statusText { overflow: hidden; text-overflow: ellipsis; }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
 .dot.tracking { background: var(--tracking); }
 .dot.paused { background: var(--paused); }
 .dot.lost { background: var(--lost); }
@@ -118,20 +132,24 @@ a { color: var(--accent); }
 
 .narrow-only { display: none; }
 
-/* Narrow windows (camera mode): secondary controls collapse into a ☰ popover. */
+/* Narrow windows (camera mode): everything but Start / camera / status
+   collapses into a ☰ popover, and the bar stays a single row. */
 @media (max-width: 860px) {
   .narrow-only { display: inline-block; }
   #secondary {
     display: none;
-    position: absolute; top: 40px; left: 0; z-index: 30;
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     padding: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    max-width: calc(100vw - 28px);
+    max-width: calc(100vw - 16px);
   }
   #secondary.open { display: flex; }
-  #scriptSelect { width: 130px; }
-  #statusPill { margin-left: 0; flex: 1 1 100%; justify-content: flex-start; }
-  .mac #toolbar { padding-left: 14px; padding-top: 34px; }
+  #scriptSelect { width: 150px; }
+  .icon-btn .lbl-text { display: none; }
+  #toolbar .icon-btn { padding: 2px 8px; }
+}
+@media (max-width: 460px) {
+  .meter { display: none; }
 }
 
 /* ---------- Prompter stage ---------- */
@@ -170,7 +188,7 @@ a { color: var(--accent); }
 #column .w { border-radius: 6px; cursor: pointer; transition: color 0.25s, background 0.15s; }
 #column .w:hover { background: var(--veil); }
 #column .w.read { color: var(--muted); opacity: 0.75; }
-#column .w.cur { background: var(--highlight); color: var(--highlight-text); opacity: 1; }
+#column .w.cur { background: var(--highlight); color: var(--highlight-text); opacity: 1; box-shadow: 0 0 0 3px var(--highlight); }
 #column .g.read { color: var(--muted); opacity: 0.75; }
 #column .empty-hint { color: var(--muted); font-weight: 400; font-size: 0.5em; }
 
@@ -181,14 +199,14 @@ a { color: var(--accent); }
 #guide {
   position: absolute; left: 0; right: 0; top: 33%;
   display: flex; align-items: center; pointer-events: none;
-  opacity: 0.85;
 }
-#guide .line { flex: 1; height: 2px; background: var(--accent); opacity: 0.45; }
-#guide .tri { width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
-#guide .tri.left { border-left: 16px solid var(--accent); margin-left: 4px; }
-#guide .tri.right { border-right: 16px solid var(--accent); margin-right: 12px; }
-#stage.mirror #guide .tri.left { border-left: 0; border-right: 16px solid var(--accent); }
-#stage.mirror #guide .tri.right { border-right: 0; border-left: 16px solid var(--accent); }
+#guide .line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--accent) 12%, var(--accent) 88%, transparent); opacity: 0.35; }
+#guide .tri { width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; opacity: 0.9; }
+#guide .tri.left { border-left: 9px solid var(--accent); margin-left: 6px; }
+#guide .tri.right { border-right: 9px solid var(--accent); margin-right: 14px; }
+#stage.mirror #guide .tri.left { border-left: 0; border-right: 9px solid var(--accent); }
+#stage.mirror #guide .tri.right { border-right: 0; border-left: 9px solid var(--accent); }
+
 
 #heard {
   position: absolute; left: 20px; bottom: 16px; max-width: calc(100% - 40px);
@@ -219,8 +237,8 @@ a { color: var(--accent); }
 @keyframes pop { from { transform: scale(1.4); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
 
 .panel-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
   padding: 20px; width: 100%; max-height: 100%;
   display: flex; flex-direction: column;
 }
@@ -265,7 +283,7 @@ a { color: var(--accent); }
 }
 .settings-inner { padding: 18px 20px 28px; display: flex; flex-direction: column; }
 .settings-inner h2 { margin: 0 0 6px; font-size: 18px; }
-.lbl { margin: 14px 0 5px; color: var(--muted); font-size: 12.5px; }
+.lbl { margin: 16px 0 6px; color: var(--muted); font-size: 11.5px; font-weight: 600; }
 .chk { display: flex; gap: 8px; align-items: center; margin-top: 10px; cursor: pointer; }
 .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .row input[type="text"] { flex: 1; min-width: 0; }

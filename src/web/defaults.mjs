@@ -7,7 +7,8 @@ export const DEFAULT_SCRIPT =
   'Press Start and begin reading whenever you are ready.';
 
 export const DEFAULT_SETTINGS = {
-  fontSize: 52,
+  fontSize: 36,
+  readingLine: 0.1, // guide line position, fraction of the prompter height
   scrollSmoothness: 0.22,
   sensitivity: 0.6,
   columnWidth: 680,
