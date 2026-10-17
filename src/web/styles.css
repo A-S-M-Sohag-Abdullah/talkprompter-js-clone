@@ -280,6 +280,7 @@ a { color: var(--accent); }
 #scriptText:focus { border-color: var(--accent); }
 #fileNote { margin-top: 8px; min-height: 1em; }
 
+#langDialog { z-index: 40; } /* above the settings drawer it opens from */
 .lang-card { max-width: 560px; }
 #langList { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; overflow-y: auto; max-height: 50vh; }
 .lang-row {

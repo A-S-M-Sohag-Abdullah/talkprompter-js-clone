@@ -186,15 +186,18 @@ function renderScript() {
   col.appendChild(frag);
 }
 
-/** Updates read/current classes for the tokens whose state changed. */
+/**
+ * Updates read/next classes for the tokens whose state changed. `to` is the
+ * last word spoken; the highlight goes on the word after it — the one the
+ * reader is about to say.
+ */
 function applyHighlight(from, to, full = false) {
   const lo = full ? 0 : Math.max(0, Math.min(from, to));
-  const hi = full ? spans.length - 1 : Math.min(spans.length - 1, Math.max(from, to));
+  const hi = full ? spans.length - 1 : Math.min(spans.length - 1, Math.max(from, to) + 1);
   for (let j = lo; j <= hi; j++) {
-    const read = j < to;
-    spans[j].classList.toggle('read', read);
-    spans[j].classList.toggle('cur', j === to);
-    gaps[j]?.classList.toggle('read', j < to);
+    spans[j].classList.toggle('read', j <= to);
+    spans[j].classList.toggle('cur', j === to + 1);
+    gaps[j]?.classList.toggle('read', j <= to);
   }
 }
 
@@ -251,7 +254,8 @@ function setPos(vp, value) {
 
 function targetFor(index) {
   if (index < 0 || !spans[index]) return 0;
-  const el = spans[index];
+  // Keep the highlighted (next) word on the reading line.
+  const el = spans[index + 1] ?? spans[index];
   if (horizontal()) {
     return Math.max(0, el.offsetLeft + el.offsetWidth / 2 - viewport().clientWidth * SIDE_FRACTION);
   }
@@ -995,11 +999,26 @@ function bindUi() {
     $('estimate').textContent = `${words} words · ≈ ${Math.floor(secs / 60)} min ${String(secs % 60).padStart(2, '0')} s at ${ASSUMED_WPM} wpm`;
   });
   $('btnLangClose').addEventListener('click', closeLanguageDialog);
+  // Clicking the dimmed backdrop around the language card closes it.
+  $('langDialog').addEventListener('click', (e) => {
+    if (e.target === $('langDialog')) closeLanguageDialog();
+  });
+  // Clicking anywhere outside the settings drawer closes it. Clicks on the
+  // prompter are swallowed so they don't also re-anchor on a word; toolbar
+  // clicks still do their job. The language dialog opens from the drawer, so
+  // clicks in it leave the drawer open.
+  document.addEventListener('click', (e) => {
+    if ($('settings').hidden) return;
+    if (e.target.closest('#settings, #langDialog, #btnSettings')) return;
+    closeSettings();
+    if (e.target.closest('#stage')) e.stopPropagation();
+  }, true);
 
   // Click (or tap) a word to re-anchor there.
   $('column').addEventListener('click', (e) => {
     const w = e.target.closest('.w');
-    if (w) seekToToken(Number(w.dataset.i));
+    // The clicked word becomes the next one to read.
+    if (w) seekToToken(Number(w.dataset.i) - 1);
   });
   viewport().addEventListener('scroll', onUserScroll, { passive: true });
   // In side-scroll mode a regular (vertical) mouse wheel moves along the line.
