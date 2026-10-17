@@ -1,7 +1,7 @@
 // Service worker for the web build: caches the app shell so TalkPrompter
 // opens offline. (Voice packs are cached by vosk-browser in IndexedDB.)
 // Bump VERSION whenever app files change.
-const VERSION = 'tp-v1';
+const VERSION = 'tp-v2';
 const SHELL = [
   './', 'index.html', 'styles.css', 'app.mjs', 'speech.mjs', 'defaults.mjs',
   'platform/index.mjs', 'platform/common.mjs', 'platform/web.mjs',

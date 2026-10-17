@@ -20,8 +20,11 @@ export function textRulesFor(code) {
 
 export const ENGLISH = textRulesFor('en');
 
-// A "word" is a run of letters, digits, combining accents and apostrophes.
-const WORD_RUN = /[\p{L}\p{Nd}\p{M}'’]+/gu;
+// A "word" is a run of letters, digits, combining marks (accents, Bangla
+// vowel signs and virama) and apostrophes. Zero-width (non-)joiners
+// (U+200C/U+200D) appear inside Bangla and other Indic words, so they join a
+// word rather than split it; normalizeWord then drops them.
+const WORD_RUN = /[\p{L}\p{Nd}\p{M}'’‌‍]+/gu;
 const LETTER_OR_DIGIT = /[\p{L}\p{Nd}]/u;
 const KEEP = /[\p{L}\p{Nd}\p{M}]/u;
 

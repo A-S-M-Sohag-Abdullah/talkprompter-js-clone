@@ -3,14 +3,16 @@
 // microphone with a recorded WAV (.cache/probe/speech.wav), and checks that
 // Vosk + the matcher move the highlight through the script.
 // Usage: npx electron scripts/voice-e2e.js
+// Other languages: set TP_E2E_LANG (name as shown in the app), TP_E2E_WAV and TP_E2E_SCRIPT.
 const { app } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-const WAV = path.join(__dirname, '..', '.cache', 'probe', 'speech.wav');
-const SCRIPT = 'As you read this text aloud, the script scrolls itself to keep pace with your voice. '
+const LANG = process.env.TP_E2E_LANG || 'English';
+const WAV = process.env.TP_E2E_WAV || path.join(__dirname, '..', '.cache', 'probe', 'speech.wav');
+const SCRIPT = process.env.TP_E2E_SCRIPT || ('As you read this text aloud, the script scrolls itself to keep pace with your voice. '
   + 'If you stop speaking or wander off script, the scrolling pauses and waits for you. '
-  + 'The moment you start reading again, it picks up right where you left off.';
+  + 'The moment you start reading again, it picks up right where you left off.');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 app.on('browser-window-created', (_e, win) => {
@@ -47,19 +49,20 @@ app.on('browser-window-created', (_e, win) => {
         document.getElementById('btnReset').click();
       `);
       // Install English through the app's own UI.
-      console.log('[e2e] installing English pack via the app…');
+      console.log(`[e2e] installing ${LANG} pack via the app…`);
       await js(`document.getElementById('btnLanguage').click();`);
       await wait(300);
       const installed = await js(`
-        const row = [...document.querySelectorAll('.lang-row')].find((r) => r.textContent.includes('English'));
+        const row = [...document.querySelectorAll('.lang-row')].find((r) => r.textContent.includes(${JSON.stringify(LANG)}));
         const btn = [...row.querySelectorAll('button')].find((b) => b.textContent === 'Download');
-        if (!btn) return 'already';
+        if (!btn) { [...row.querySelectorAll('button')].find((b) => b.textContent === 'Use')?.click(); return 'already'; }
         btn.click(); return 'started';
       `);
       console.log('[e2e] download:', installed);
       for (let i = 0; i < 240; i++) {
         const st = await js(`return document.getElementById('langStatus').textContent`);
         if (/ready|failed/i.test(st) || installed === 'already') { console.log('[e2e]', st || 'pack present'); break; }
+        if (i % 15 === 0) console.log('[e2e] downloading…', await js(`return document.querySelector('.progress > div')?.style.width || ''`));
         await wait(1000);
       }
       await js(`document.getElementById('btnLangClose').click();`);
@@ -71,7 +74,7 @@ app.on('browser-window-created', (_e, win) => {
         const s = await js(`return [document.getElementById('statusText').textContent, document.querySelector('#column .w.cur')?.textContent || '-', document.getElementById('heardText').textContent]`);
         const line = s.join(' | ');
         if (!seen.has(line)) { seen.add(line); console.log('[e2e]', line); }
-        if (s[1].startsWith('you') && /done|left/.test(s[0]) && i > 12) break;
+        if (/done/.test(s[0]) || (s[1].startsWith('you') && /left/.test(s[0]) && i > 12)) break;
       }
       fs.writeFileSync(path.join(__dirname, '..', '.cache', 'shots', 'voice-e2e.png'), (await win.webContents.capturePage()).toPNG());
       await js(`document.getElementById('btnToggle').click();`);

@@ -39,6 +39,7 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm test
+      - run: node scripts/vendor.mjs
       - run: ${{ matrix.cmd }}
       - uses: actions/upload-artifact@v4
         with:

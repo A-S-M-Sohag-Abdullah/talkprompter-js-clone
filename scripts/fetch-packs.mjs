@@ -11,7 +11,10 @@ import { LANGUAGES } from '../src/core/languages.mjs';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'web-packs');
 const wanted = process.argv.slice(2);
-const langs = wanted.length ? LANGUAGES.filter((l) => wanted.includes(l.code)) : LANGUAGES;
+// Only single-archive Vosk packs need self-hosting; zipformer packs (Bangla)
+// download straight from Hugging Face, which allows CORS.
+const VOSK_LANGS = LANGUAGES.filter((l) => l.engine === 'vosk');
+const langs = wanted.length ? VOSK_LANGS.filter((l) => wanted.includes(l.code)) : VOSK_LANGS;
 fs.mkdirSync(OUT, { recursive: true });
 
 function download(url, dest) {
@@ -38,6 +41,6 @@ for (const lang of langs) {
   console.log('done');
 }
 
-const index = LANGUAGES.filter((l) => fs.existsSync(path.join(OUT, l.file))).map((l) => ({ code: l.code, file: l.file }));
+const index = VOSK_LANGS.filter((l) => fs.existsSync(path.join(OUT, l.file))).map((l) => ({ code: l.code, file: l.file }));
 fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify(index, null, 2));
 console.log(`web-packs/index.json lists ${index.length} pack(s). Run "npm run build:web" to include them.`);

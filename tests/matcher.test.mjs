@@ -146,6 +146,24 @@ test('text normalization', () => {
   assert.equal(levenshtein(['a', 'b', 'c'], ['a', 'c']), 1);
 });
 
+test('bangla normalization and tracking', () => {
+  const bn = textRulesFor('bn');
+  // Precomposed য় (U+09DF) and decomposed য + ় normalize to the same word.
+  assert.equal(normalizeWord('আপনায়', bn), normalizeWord('আপনায়', bn));
+  // A zero-width joiner inside a word must not split it.
+  assert.deepEqual(toMatchWords('র‍্যাব এসেছে।', bn), ['র্যাব', 'এসেছে']);
+  // Bangla digits stay one word (no English number expansion).
+  assert.deepEqual(toMatchWords('২৫ টাকা', bn), ['২৫', 'টাকা']);
+
+  const model = buildScript('আমি বাংলায় কথা বলি। তুমি কেমন আছো? আজ আবহাওয়া খুব ভালো।', bn);
+  const m = new ScriptMatcher(model);
+  feedGrowing(m, 'আমি বাংলায় কথা বলি তুমি কেমন');
+  assert.equal(wordAt(model, m.currentTokenIndex), 'কেমন');
+  // Recognizer output uses the precomposed য় form; the script may not.
+  m.process('আজ আবহাওয়া খুব');
+  assert.equal(wordAt(model, m.currentTokenIndex), 'খুব');
+});
+
 test('paragraph starts', () => {
   assert.deepEqual(buildScript('one two\n\nthree four\nfive\n\n\nsix').paragraphStarts, [0, 2, 5]);
 });

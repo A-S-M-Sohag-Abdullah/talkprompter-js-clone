@@ -14,23 +14,28 @@ export async function createCapacitorPlatform() {
   const active = new Map();
   const uris = new Map();
 
-  const packPath = (lang) => `voice-packs/${lang.file}`;
+  // Every file a language needs: one .zip (vosk) or several model files (zipformer).
+  const packFiles = (lang) => (lang.files
+    ? lang.files.map((f) => ({ name: f.name, url: f.url, bytes: f.bytes, path: `voice-packs/${lang.folder}/${f.name}` }))
+    : [{ name: lang.file, url: lang.url, bytes: lang.bytes, path: `voice-packs/${lang.file}` }]);
 
-  async function fileUri(lang) {
-    if (!uris.has(lang.code)) {
-      const { uri } = await Filesystem.getUri({ directory: DIR, path: packPath(lang) });
-      uris.set(lang.code, uri);
-    }
-    return uris.get(lang.code);
+  async function fileUri(path) {
+    if (!uris.has(path)) uris.set(path, (await Filesystem.getUri({ directory: DIR, path })).uri);
+    return uris.get(path);
   }
 
-  async function exists(lang) {
+  async function fileExists(path) {
     try {
-      await Filesystem.stat({ directory: DIR, path: packPath(lang) });
+      await Filesystem.stat({ directory: DIR, path });
       return true;
     } catch {
       return false;
     }
+  }
+
+  async function exists(lang) {
+    for (const f of packFiles(lang)) if (!(await fileExists(f.path))) return false;
+    return true;
   }
 
   const webWakeLock = browserWakeLock();
@@ -73,17 +78,26 @@ export async function createCapacitorPlatform() {
       async install(code, onProgress) {
         const lang = languagesCache.find((l) => l.code === code);
         if (!lang) return { ok: false, error: 'Unknown language' };
-        await Filesystem.mkdir({ directory: DIR, path: 'voice-packs', recursive: true }).catch(noop);
-        const path = await fileUri(lang);
+        const files = packFiles(lang);
+        let done = 0;
+        let currentUrl = null;
         const listener = await FileTransfer.addListener('progress', (p) => {
-          if (p.url === lang.url) onProgress({ received: p.bytes, total: p.contentLength || lang.bytes });
+          if (p.url === currentUrl) onProgress({ received: done + p.bytes, total: lang.bytes });
         });
         active.set(code, true);
         try {
-          await FileTransfer.downloadFile({ url: lang.url, path, progress: true });
+          for (const f of files) {
+            if (!(await fileExists(f.path))) {
+              const dir = f.path.slice(0, f.path.lastIndexOf('/'));
+              await Filesystem.mkdir({ directory: DIR, path: dir, recursive: true }).catch(noop);
+              currentUrl = f.url;
+              await FileTransfer.downloadFile({ url: f.url, path: await fileUri(f.path), progress: true });
+            }
+            done += f.bytes;
+          }
           return { ok: true };
         } catch (err) {
-          await Filesystem.deleteFile({ directory: DIR, path: packPath(lang) }).catch(noop);
+          for (const f of files) await Filesystem.deleteFile({ directory: DIR, path: f.path }).catch(noop);
           return { ok: false, error: err?.message || String(err) };
         } finally {
           active.delete(code);
@@ -93,11 +107,17 @@ export async function createCapacitorPlatform() {
       cancel: noop, // native downloads can't be aborted from JS
       async remove(code) {
         const lang = languagesCache.find((l) => l.code === code);
-        if (lang) await Filesystem.deleteFile({ directory: DIR, path: packPath(lang) }).catch(noop);
+        if (lang) for (const f of packFiles(lang)) await Filesystem.deleteFile({ directory: DIR, path: f.path }).catch(noop);
       },
       async modelUrl(lang) {
-        return Cap.convertFileSrc(await fileUri(lang));
+        return Cap.convertFileSrc(await fileUri(packFiles(lang)[0].path));
       },
+      async fileUrls(lang) {
+        const urls = {};
+        for (const f of packFiles(lang)) urls[f.name] = Cap.convertFileSrc(await fileUri(f.path));
+        return urls;
+      },
+      cacheFiles: false,
       markLoaded() {}
     },
 

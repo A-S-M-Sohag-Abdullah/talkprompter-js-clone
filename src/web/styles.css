@@ -162,6 +162,11 @@ a { color: var(--accent); }
   color: var(--text);
   cursor: default;
 }
+/* Bangla: system Bengali fonts on each platform, and room for conjuncts and vowel signs. */
+#column:lang(bn), #scriptText:lang(bn) {
+  font-family: "Kohinoor Bangla", "Bangla Sangam MN", "Nirmala UI", "Noto Sans Bengali", "Hind Siliguri", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+#column:lang(bn) { line-height: 1.6; font-weight: 500; letter-spacing: 0; }
 #column .w { border-radius: 6px; cursor: pointer; transition: color 0.25s, background 0.15s; }
 #column .w:hover { background: var(--veil); }
 #column .w.read { color: var(--muted); opacity: 0.75; }

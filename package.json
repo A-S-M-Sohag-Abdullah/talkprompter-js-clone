@@ -6,14 +6,18 @@
   "main": "src/electron/main.js",
   "license": "MIT",
   "scripts": {
+    "prestart": "node scripts/vendor.mjs",
     "start": "electron .",
     "test": "node --test tests/matcher.test.mjs",
     "build:web": "node scripts/build-web.mjs",
     "web": "node scripts/build-web.mjs && node scripts/serve.mjs",
     "fetch-packs": "node scripts/fetch-packs.mjs",
     "icons": "electron scripts/make-icons.js",
+    "predist:mac": "node scripts/vendor.mjs",
     "dist:mac": "electron-builder --mac",
+    "predist:win": "node scripts/vendor.mjs",
     "dist:win": "electron-builder --win",
+    "predist:linux": "node scripts/vendor.mjs",
     "dist:linux": "electron-builder --linux",
     "mobile:sync": "node scripts/build-web.mjs --no-packs && cap sync && node scripts/patch-native.mjs",
     "android:open": "cap open android",
@@ -27,6 +31,7 @@
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/ios": "^8.5.3",
     "mammoth": "^1.13.0",
+    "onnxruntime-web": "^1.30.0",
     "vosk-browser": "^0.0.8"
   },
   "devDependencies": {
@@ -46,9 +51,13 @@
       "src/electron/**",
       "src/web/**",
       "src/core/**",
+      "vendor/**",
       "package.json",
       "!node_modules/@capacitor*/**",
-      "!node_modules/@capacitor-community/**"
+      "!node_modules/@capacitor-community/**",
+      "!node_modules/onnxruntime-web/**",
+      "!node_modules/onnxruntime-common/**",
+      "!node_modules/vosk-browser/**"
     ],
     "mac": {
       "category": "public.app-category.video",

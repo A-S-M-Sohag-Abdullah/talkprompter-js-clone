@@ -48,6 +48,8 @@ export function createElectronPlatform() {
       cancel: d.cancelPack,
       remove: d.removePack,
       modelUrl: (lang) => `app://talkprompter/voice-packs/${lang.file}`,
+      fileUrls: (lang) => Object.fromEntries(lang.files.map((f) => [f.name, `app://talkprompter/voice-packs/${lang.folder}/${f.name}`])),
+      cacheFiles: false,
       markLoaded() {}
     },
 

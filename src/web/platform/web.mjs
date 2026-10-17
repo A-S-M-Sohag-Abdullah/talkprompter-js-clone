@@ -8,6 +8,7 @@
 // vosk-browser caches the extracted model in IndexedDB after first use, so a
 // pack only downloads once and then works offline.
 
+import { findLanguage } from '../core/languages.mjs';
 import { readFileObject, pickScriptFile, localSettings, browserWakeLock, noop, noopSubscribe } from './common.mjs';
 
 export async function createWebPlatform() {
@@ -59,7 +60,7 @@ export async function createWebPlatform() {
         const done = loaded();
         return languages.map((l) => ({
           code: l.code,
-          available: !!sourceFor(l),
+          available: !!(l.webDirect || sourceFor(l)),
           installed: done.has(l.code),
           downloading: false
         }));
@@ -67,10 +68,19 @@ export async function createWebPlatform() {
       async install() { return { ok: true }; },
       cancel: noop,
       async remove(code) {
+        const lang = findLanguage(code);
+        if (lang?.files && 'caches' in window) {
+          const store = await caches.open('tp-voice-packs-v1');
+          await Promise.all(lang.files.map((f) => store.delete(f.url)));
+        }
         const done = loaded();
         done.delete(code);
         localStorage.setItem('talkprompter.loadedPacks', JSON.stringify([...done]));
       },
+      // Zipformer packs download straight from Hugging Face (CORS allowed);
+      // the engine keeps them in Cache Storage so they work offline after.
+      fileUrls: (lang) => Object.fromEntries(lang.files.map((f) => [f.name, f.url])),
+      cacheFiles: true,
       modelUrl(lang) {
         const src = sourceFor(lang);
         return src ? new URL(src, location.href).toString() : null;

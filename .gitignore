@@ -7,3 +7,4 @@ _reference/
 android/app/build/
 ios/App/build/
 *.log
+vendor/

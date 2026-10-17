@@ -10,7 +10,7 @@ import { buildScript, textRulesFor } from './core/text.mjs';
 import { ScriptMatcher, optionsForSensitivity, TrackingState } from './core/matcher.mjs';
 import { smoothDamp } from './core/smoothDamp.mjs';
 import { LANGUAGES, findLanguage } from './core/languages.mjs';
-import { VoskEngine, SimulatedEngine } from './speech.mjs';
+import { VoskEngine, ZipformerEngine, SimulatedEngine } from './speech.mjs';
 import { DEFAULT_SETTINGS, DEFAULT_SCRIPT } from './defaults.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -127,6 +127,9 @@ function activeLanguage() {
 function rebuild() {
   const entry = activeScript();
   script = buildScript(entry.text, textRulesFor(activeLanguage().code));
+  // Lets CSS pick fonts/line height per script (e.g. Bangla conjuncts need more room).
+  $('column').lang = activeLanguage().code;
+  $('scriptText').lang = activeLanguage().code;
   matcher = null;
   renderScript();
   current = Math.min(entry.lastTokenIndex ?? -1, script.tokenCount - 1);
@@ -206,7 +209,7 @@ const flow = { paused: false, pausedSince: 0, pace: 0, lastConfirmed: 0, lastTar
 
 function layoutPadding() {
   const h = viewport().clientHeight;
-  const line = S.fontSize * 1.38;
+  const line = parseFloat(getComputedStyle($('column')).lineHeight) || S.fontSize * 1.38;
   $('column').style.paddingTop = `${Math.max(0, h * READING_FRACTION - line / 2)}px`;
   $('column').style.paddingBottom = `${Math.round(h * (1 - READING_FRACTION))}px`;
   $('guide').style.top = `${h * READING_FRACTION}px`;
@@ -409,7 +412,20 @@ async function start() {
         ? 'Downloading voice pack (first time only)…'
         : 'Loading voice pack…');
       if (!(await P.requestMic())) throw new Error('Microphone access was denied. Allow it in your system settings.');
-      eng = new VoskEngine({ modelUrl: await P.packs.modelUrl(lang), deviceId: S.microphoneId, matchWords: script.matchWords });
+      if (lang.engine === 'zipformer') {
+        const firstTime = P.kind === 'web' && !packFor(lang.code)?.installed;
+        eng = new ZipformerEngine({
+          lang,
+          urls: await P.packs.fileUrls(lang),
+          cache: P.packs.cacheFiles,
+          deviceId: S.microphoneId,
+          onProgress: (got, total) => {
+            if (running && firstTime) setStatus('loading', `Downloading ${lang.englishName} voice pack… ${Math.round((got / total) * 100)}%`);
+          }
+        });
+      } else {
+        eng = new VoskEngine({ modelUrl: await P.packs.modelUrl(lang), deviceId: S.microphoneId, matchWords: script.matchWords });
+      }
     }
     eng.onHypothesis = onHypothesis;
     eng.onLevel = setLevel;
@@ -641,7 +657,7 @@ function updateEngineNote() {
   $('langSummary').textContent = `${lang.englishName}${lang.nativeName !== lang.englishName ? ` (${lang.nativeName})` : ''}`;
   $('engineNote').textContent = S.forceSimulation
     ? 'Simulation mode: the app reads the script by itself at 150 wpm. No microphone is used.'
-    : `Speech: Vosk offline recognizer (${lang.englishName}). Your audio never leaves this device.`;
+    : `Speech: ${lang.engine === 'zipformer' ? 'Vosk streaming (ONNX)' : 'Vosk'} offline recognizer (${lang.englishName}). Your audio never leaves this device.`;
 }
 
 function bindSettings() {
@@ -803,7 +819,7 @@ async function installPack(code) {
   progress.delete(code);
   await refreshPacks();
   if (res?.ok) {
-    if (!S.voiceLanguage || !packFor(S.voiceLanguage)?.installed) useLanguage(code);
+    useLanguage(code); // downloading a language means you want to read in it
     $('langStatus').textContent = `${findLanguage(code).englishName} is ready. Press Start and read.`;
   } else {
     $('langStatus').textContent = `Download failed: ${res?.error || 'unknown error'}`;

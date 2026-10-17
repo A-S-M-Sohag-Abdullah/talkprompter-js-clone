@@ -56,7 +56,10 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
-  '.zip': 'application/zip'
+  '.zip': 'application/zip',
+  '.wasm': 'application/wasm',
+  '.onnx': 'application/octet-stream',
+  '.txt': 'text/plain; charset=utf-8'
 };
 
 let settings;
@@ -67,17 +70,18 @@ let cameraRestore = null;
 
 // app://talkprompter/ mirrors the layout of the web build (scripts/build-web.mjs):
 //   /           -> src/web        /core/         -> src/core
-//   /vendor/... -> node_modules   /voice-packs/  -> downloaded packs
+//   /vendor/    -> vendor/        /voice-packs/  -> downloaded packs
 function resolveAppUrl(url) {
   const p = decodeURIComponent(new URL(url).pathname);
-  if (p.startsWith('/voice-packs/')) return path.join(PACKS_DIR, path.basename(p));
-  if (p === '/vendor/vosk.js') return require.resolve('vosk-browser/dist/vosk.js');
-  if (p === '/vendor/mammoth.browser.min.js') return require.resolve('mammoth/mammoth.browser.min.js');
-  const [base, rel] = p.startsWith('/core/')
-    ? [path.join(ROOT, 'src', 'core'), p.slice('/core/'.length)]
-    : [path.join(ROOT, 'src', 'web'), p.slice(1)];
-  const file = path.normalize(path.join(base, rel || 'index.html'));
-  return file.startsWith(base) ? file : null;
+  const mounts = [
+    ['/voice-packs/', PACKS_DIR],
+    ['/vendor/', path.join(ROOT, 'vendor')],
+    ['/core/', path.join(ROOT, 'src', 'core')],
+    ['/', path.join(ROOT, 'src', 'web')]
+  ];
+  const [prefix, base] = mounts.find(([m]) => p.startsWith(m));
+  const file = path.normalize(path.join(base, p.slice(prefix.length) || 'index.html'));
+  return file.startsWith(base + path.sep) ? file : null;
 }
 
 function registerAppProtocol() {

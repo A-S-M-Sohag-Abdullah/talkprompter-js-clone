@@ -13,13 +13,13 @@ This is a JavaScript port of [Sven-Bo/talkprompter](https://github.com/Sven-Bo/t
 | **Android** | APK / Play Store | Capacitor |
 | **iOS / iPadOS** | Xcode project | Capacitor |
 
-Speech recognition is [Vosk](https://alphacephei.com/vosk/) compiled to WebAssembly ([vosk-browser](https://github.com/ccoreilly/vosk-browser)), so every platform runs the same engine with nothing native to compile.
+Speech recognition is [Vosk](https://alphacephei.com/vosk/), running as WebAssembly on every platform with nothing native to compile: classic models through [vosk-browser](https://github.com/ccoreilly/vosk-browser), and the newer streaming models (used for Bangla) through [ONNX Runtime Web](https://onnxruntime.ai/) with a built-in streaming decoder.
 
 ## Features
 
 - Scrolls by listening to your voice: no fixed speed, pauses when you pause
 - Re-reading a sentence after a flubbed take? It follows you back
-- 11 languages: English, Czech, Dutch, French, German, Italian, Polish, Portuguese, Russian, Spanish, Turkish
+- 12 languages: English, **Bangla (বাংলা)**, Czech, Dutch, French, German, Italian, Polish, Portuguese, Russian, Spanish, Turkish
 - Click or tap any word to jump there
 - Loads `.docx` / `.txt` (button or drag and drop). On desktop it reloads when you save in Word
 - Remembers recent scripts and where you stopped in each
@@ -55,7 +55,7 @@ npm install
 npm start
 ```
 
-On first start, pick your language and the app downloads its voice pack (30–55 MB, once).
+On first start, pick your language and the app downloads its voice pack once (30–55 MB; Bangla is 94 MB).
 
 ### macOS
 
@@ -101,7 +101,7 @@ npm run web
 
 This opens <http://localhost:5173>. To publish, upload the `dist/web` folder (built by `npm run build:web`) to any static host with HTTPS: GitHub Pages, Netlify, Cloudflare Pages, etc. Browsers need HTTPS for microphone access.
 
-**Voice packs on the web.** Browsers can't download from alphacephei.com (it sends no CORS headers). English, French, German, Italian, Portuguese, Russian, Spanish and Turkish load from a public mirror automatically. To self-host packs (needed for Czech, Dutch and Polish):
+**Voice packs on the web.** Browsers can't download from alphacephei.com (it sends no CORS headers). Bangla downloads directly from Hugging Face, and English, French, German, Italian, Portuguese, Russian, Spanish and Turkish load from a public mirror, all automatically. To self-host packs (needed for Czech, Dutch and Polish):
 
 ```bash
 npm run fetch-packs -- nl pl cs
@@ -148,16 +148,26 @@ microphone → Vosk (WASM, grammar = the script's words) → partial transcripts
 - **Matcher**: advances only when recent speech matches the script near the current position. Pause, ad-lib or cough means no match, so it holds. If it stays lost, it scans further ahead (skipped paragraph) and behind (re-read sentence).
 - **Numbers**: "25" in an English script matches "twenty five".
 
+### Bangla
+
+Bangla uses [alphacep/vosk-model-small-streaming-bn](https://huggingface.co/alphacep/vosk-model-small-streaming-bn) (Apache 2.0), a streaming zipformer model in sherpa-onnx format. The app runs it with ONNX Runtime Web plus its own JavaScript feature extractor and decoder (`src/core/fbank.mjs`, `src/core/zipformer.mjs`), verified to give the same transcript as the official sherpa-onnx decoder.
+
+- This model can't be restricted to the script's words (no grammar mode), so it hears open vocabulary and makes more spelling slips than grammar-mode languages. The matcher tolerates them. If the prompter hesitates, raise **Tracking sensitivity** in Settings.
+- Write the script in Bangla script. Numbers work best written as words.
+- It needs a 14 MB runtime that only loads when Bangla is in use.
+
 The matcher and text logic are ported 1:1 from the original C# and covered by its unit tests (`npm test`).
 
 ## Project layout
 
 ```
-src/core/       shared logic: matcher, text normalizer, numbers, smooth scroll, languages
+src/core/       shared logic: matcher, text normalizer, numbers, smooth scroll, languages,
+                fbank + zipformer (streaming decoder for Bangla)
 src/web/        the app UI (runs on every platform)
   platform/     adapters: electron.mjs · web.mjs · capacitor.mjs
 src/electron/   desktop shell: window, camera mode, voice-pack downloads, Word sync
-scripts/        build-web, serve, fetch-packs, patch-native, make-icons, dev tests
+scripts/        build-web, serve, vendor, fetch-packs, patch-native, make-icons, dev tests
+vendor/         browser runtimes copied from node_modules (generated, not committed)
 tests/          unit tests (node --test)
 android/ ios/   Capacitor native projects
 ```
@@ -166,9 +176,9 @@ Dev checks (desktop): `npx electron scripts/electron-smoke.js` saves UI screensh
 
 ## Differences from the original
 
-- Indonesian isn't included: it uses a sherpa-onnx model, which has no browser build yet.
+- Indonesian isn't included yet. Its sherpa-onnx model could run on the same engine as Bangla.
 - There's no built-in auto-updater. Use the GitHub workflow to build new releases.
 
 ## License
 
-MIT, like the original. Voice packs: [Vosk models](https://alphacephei.com/vosk/models) by Alpha Cephei (Apache 2.0). Original app by Sven Bosau ([Bosau Digital LLC](https://pythonandvba.com)).
+MIT, like the original. Voice packs: [Vosk models](https://alphacephei.com/vosk/models) by Alpha Cephei (Apache 2.0), including the [Bangla streaming model](https://huggingface.co/alphacep/vosk-model-small-streaming-bn). Original app by Sven Bosau ([Bosau Digital LLC](https://pythonandvba.com)).
