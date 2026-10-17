@@ -87,8 +87,9 @@ a { color: var(--accent); }
   padding: 4px 8px;
   -webkit-app-region: drag;
 }
-.mac #toolbar { padding-left: 76px; } /* room for the traffic lights */
-.mac.fullscreen #toolbar { padding-left: 8px; }
+/* Desktop: the bar sits at the bottom, so the script starts at the very top
+   of the window — the edge closest to the webcam. */
+.platform-electron #toolbar { order: 2; border-bottom: 0; border-top: 1px solid var(--border); }
 #toolbar button, #toolbar select, #statusPill, #secondary { -webkit-app-region: no-drag; }
 #toolbar button, #toolbar select { min-height: 26px; padding: 2px 10px; font-size: 13px; border-radius: 7px; }
 #toolbar button:not(.primary), #toolbar select { background: transparent; border-color: transparent; }
@@ -144,6 +145,7 @@ a { color: var(--accent); }
     max-width: calc(100vw - 16px);
   }
   #secondary.open { display: flex; }
+  .platform-electron #secondary { top: auto; bottom: calc(100% + 8px); }
   #scriptSelect { width: 150px; }
   .icon-btn .lbl-text { display: none; }
   #toolbar .icon-btn { padding: 2px 8px; }

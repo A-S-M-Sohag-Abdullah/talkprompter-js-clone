@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('tpDesktop', {
   setFullscreen: (on) => ipcRenderer.invoke('window:fullscreen', on),
   onFullscreenChanged: on('window:fullscreen-changed'),
   setCameraMode: (on) => ipcRenderer.invoke('window:camera', on),
+  setWindowButtons: (visible) => ipcRenderer.invoke('window:buttons', visible),
   setTheme: (mode) => ipcRenderer.invoke('theme:set', mode),
   openDataFolder: () => ipcRenderer.invoke('shell:openDataFolder'),
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),

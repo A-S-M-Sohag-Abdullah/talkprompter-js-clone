@@ -481,6 +481,9 @@ const toggle = () => (running ? stop() : start());
 function updateToggle() {
   $('btnToggle').textContent = running ? 'Stop' : 'Start';
   $('btnToggle').classList.toggle('running', running);
+  // Hide the window's close/minimize/zoom buttons while reading so the script
+  // can use the top edge of the window.
+  P.setWindowButtons?.(!running);
 }
 
 let rememberTimer = null;

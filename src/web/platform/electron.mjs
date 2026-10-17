@@ -57,6 +57,7 @@ export function createElectronPlatform() {
     setFullscreen: d.setFullscreen,
     onFullscreenChanged: d.onFullscreenChanged,
     setCameraMode: d.setCameraMode,
+    setWindowButtons: d.setWindowButtons,
     setTheme: d.setTheme,
     keepAwake: async () => {},
     openDataFolder: d.openDataFolder,

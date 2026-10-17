@@ -261,6 +261,10 @@ function setupIpc() {
     return false;
   });
 
+  ipcMain.handle('window:buttons', (_e, visible) => {
+    if (isMac) win.setWindowButtonVisibility(!!visible);
+  });
+
   ipcMain.handle('theme:set', (_e, mode) => {
     nativeTheme.themeSource = mode === 'auto' ? 'system' : mode;
   });
