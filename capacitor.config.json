@@ -1,0 +1,7 @@
+{
+  "appId": "com.talkprompter.app",
+  "appName": "TalkPrompter",
+  "webDir": "dist/web",
+  "android": { "webContentsDebuggingEnabled": false },
+  "ios": { "contentInset": "never" }
+}

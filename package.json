@@ -1,0 +1,101 @@
+{
+  "name": "talkprompter-electron",
+  "productName": "TalkPrompter",
+  "version": "1.0.0",
+  "description": "A voice-following teleprompter for Windows, macOS, Linux, the web, Android and iOS. Port of Sven-Bo/talkprompter.",
+  "main": "src/electron/main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/matcher.test.mjs",
+    "build:web": "node scripts/build-web.mjs",
+    "web": "node scripts/build-web.mjs && node scripts/serve.mjs",
+    "fetch-packs": "node scripts/fetch-packs.mjs",
+    "icons": "electron scripts/make-icons.js",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "mobile:sync": "node scripts/build-web.mjs --no-packs && cap sync && node scripts/patch-native.mjs",
+    "android:open": "cap open android",
+    "ios:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/file-transfer": "^2.0.6",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/ios": "^8.5.3",
+    "mammoth": "^1.13.0",
+    "vosk-browser": "^0.0.8"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "electron": "^44.8.0",
+    "electron-builder": "^26.15.3"
+  },
+  "author": "TalkPrompter",
+  "build": {
+    "appId": "com.talkprompter.app",
+    "productName": "TalkPrompter",
+    "directories": {
+      "output": "dist/desktop",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/electron/**",
+      "src/web/**",
+      "src/core/**",
+      "package.json",
+      "!node_modules/@capacitor*/**",
+      "!node_modules/@capacitor-community/**"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "TalkPrompter listens to you read so it can scroll your script. Audio is processed on this Mac and never leaves it."
+      },
+      "identity": null
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "icon": "build/icon.png",
+      "maintainer": "TalkPrompter"
+    }
+  }
+}

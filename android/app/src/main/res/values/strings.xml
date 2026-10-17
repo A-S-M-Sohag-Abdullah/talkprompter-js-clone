@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TalkPrompter</string>
+    <string name="title_activity_main">TalkPrompter</string>
+    <string name="package_name">com.talkprompter.app</string>
+    <string name="custom_url_scheme">com.talkprompter.app</string>
+</resources>

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.cache/
+.userdata/
+web-packs/
+_reference/
+android/app/build/
+ios/App/build/
+*.log
