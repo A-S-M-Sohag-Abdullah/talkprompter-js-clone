@@ -19,15 +19,26 @@ const isMac = process.platform === 'darwin';
 // While developing (not packaged), keep ALL app data — settings, voice packs,
 // Chromium caches, IndexedDB, temp files — inside the project folder rather
 // than the system drive. A packaged app uses the normal per-user location.
-// TALKPROMPTER_DATA_DIR overrides the data location for any build (e.g. to keep
-// a packaged app's data off the system drive).
-if (process.env.TALKPROMPTER_DATA_DIR) {
-  const dir = path.resolve(process.env.TALKPROMPTER_DATA_DIR);
-  fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
-  app.setPath('userData', dir);
-  app.setPath('sessionData', dir);
-  app.setPath('crashDumps', path.join(dir, 'crashes'));
-  app.setPath('temp', path.join(dir, 'tmp'));
+// Where a packaged app keeps its data instead of the per-user folder:
+//  1. TALKPROMPTER_DATA_DIR, if set, or
+//  2. a "data" folder next to the app (portable mode — create the folder to
+//     opt in, e.g. to keep everything off the system drive). The portable
+//     .exe runs from a temp copy, so "next to the app" means next to the .exe.
+function customDataDir() {
+  if (process.env.TALKPROMPTER_DATA_DIR) return path.resolve(process.env.TALKPROMPTER_DATA_DIR);
+  if (!app.isPackaged) return null;
+  const appDir = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath);
+  const dir = path.join(appDir, 'data');
+  return fs.existsSync(dir) ? dir : null;
+}
+
+const dataDir = customDataDir();
+if (dataDir) {
+  fs.mkdirSync(path.join(dataDir, 'tmp'), { recursive: true });
+  app.setPath('userData', dataDir);
+  app.setPath('sessionData', dataDir);
+  app.setPath('crashDumps', path.join(dataDir, 'crashes'));
+  app.setPath('temp', path.join(dataDir, 'tmp'));
 } else if (!app.isPackaged) {
   const devData = path.join(ROOT, '.userdata');
   fs.mkdirSync(devData, { recursive: true });
